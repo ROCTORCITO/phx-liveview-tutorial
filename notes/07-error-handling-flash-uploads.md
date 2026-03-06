@@ -131,6 +131,70 @@ def handle_event("save", %{"user" => user_params}, socket) do
 end
 ```
 
+#### Form Validation with Inline Errors (Without Ecto)
+
+The source demonstrates a pattern for form validation using a separate `@validation_errors`
+map assign — useful when you don't want Ecto changesets:
+
+```elixir
+# In mount: initialize with empty errors
+assign(socket,
+  validation_form: to_form(%{"email" => "", "age" => ""}, as: "user"),
+  validation_errors: %{}
+)
+
+# On submit: validate params, store errors in a map assign
+def handle_event("validate_form", %{"user" => params}, socket) do
+  errors = validate_user_params(params)
+
+  socket =
+    socket
+    |> assign(validation_form: to_form(params, as: "user"), validation_errors: errors)
+
+  if map_size(errors) == 0 do
+    {:noreply, put_flash(socket, :info, "Form is valid!")}
+  else
+    {:noreply, put_flash(socket, :error, "Validation failed: #{map_size(errors)} error(s)")}
+  end
+end
+
+defp validate_user_params(params) do
+  errors = %{}
+
+  errors =
+    if String.match?(params["email"] || "", ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/) do
+      errors
+    else
+      Map.put(errors, :email, "Must be a valid email address")
+    end
+
+  errors =
+    case Integer.parse(params["age"] || "") do
+      {num, ""} when num >= 18 and num <= 120 -> errors
+      _ -> Map.put(errors, :age, "Must be a number between 18 and 120")
+    end
+
+  errors
+end
+```
+
+**In the template** — use `@validation_errors` to conditionally apply error styles:
+
+```heex
+<input
+  name="user[email]"
+  value={@validation_form[:email].value}
+  class={["input input-bordered", @validation_errors[:email] && "input-error"]}
+/>
+<p :if={@validation_errors[:email]} class="text-error text-xs mt-1">
+  {@validation_errors[:email]}
+</p>
+```
+
+This approach keeps error display separate from the form struct — errors are in a
+plain map, not in `to_form`'s error keyword list. It's simpler for cases where you
+don't need `<.input>` component's built-in error rendering.
+
 **Key principle:** Never let `handle_event` crash silently. Every code path should
 either update the socket with meaningful feedback or explicitly handle the error.
 

@@ -7,8 +7,11 @@ defmodule LiveviewLabWeb.Lesson8StreamsLive do
   - `stream_insert/3`, `stream_delete/2` for granular updates
   - `assign_async/3` for non-blocking initial data loads
   - Combining streams + async for responsive UIs
+  - Chunked stream loading for large datasets
   """
   use LiveviewLabWeb, :live_view
+
+  @chunk_size 50
 
   def mount(_params, _session, socket) do
     socket =
@@ -17,6 +20,8 @@ defmodule LiveviewLabWeb.Lesson8StreamsLive do
       |> stream(:messages, [])
       |> assign(form: to_form(%{"body" => ""}))
       |> assign(counter: 0)
+      |> stream(:chunked_items, [])
+      |> assign(pending_items: [], chunked_total: 0, chunked_loaded: 0)
       |> assign_async(:slow_data, fn -> fetch_slow_data() end)
 
     {:ok, socket}
@@ -120,7 +125,54 @@ defmodule LiveviewLabWeb.Lesson8StreamsLive do
         </div>
       </div>
 
-      <%!-- SECTION 3: Teaching notes --%>
+      <%!-- SECTION 3: Chunked stream loading demo --%>
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg">Chunked Loading — Divide the Delivery</h2>
+          <p class="text-sm opacity-70">
+            Inserting thousands of items at once freezes the UI. Chunking sends them
+            in waves so the browser stays responsive between batches.
+          </p>
+
+          <div class="flex gap-2 mt-2">
+            <button phx-click="load_chunked" class="btn btn-sm btn-outline btn-accent">
+              Load 1,000 items (chunked)
+            </button>
+            <button phx-click="reset_chunked" class="btn btn-sm btn-outline btn-warning">
+              Reset
+            </button>
+          </div>
+
+          <div :if={@chunked_total > 0} class="mt-2">
+            <progress
+              class="progress progress-accent w-full"
+              value={@chunked_loaded}
+              max={@chunked_total}
+            >
+            </progress>
+            <p class="text-xs opacity-60 mt-1">
+              {@chunked_loaded} / {@chunked_total} items loaded
+            </p>
+          </div>
+
+          <div
+            id="chunked-items"
+            phx-update="stream"
+            class="mt-3 max-h-64 overflow-y-auto space-y-1"
+          >
+            <div
+              :for={{dom_id, item} <- @streams.chunked_items}
+              id={dom_id}
+              class="p-2 bg-base-300 rounded text-sm"
+            >
+              <span class="badge badge-accent badge-sm font-mono mr-2">{item.id}</span>
+              {item.label}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- SECTION 4: Teaching notes --%>
       <div class="card bg-info/10 border border-info/30">
         <div class="card-body text-sm space-y-2">
           <h3 class="font-bold">Key Takeaways</h3>
@@ -130,6 +182,7 @@ defmodule LiveviewLabWeb.Lesson8StreamsLive do
             <li><code>stream_delete/2</code> — remove an item by its DOM id</li>
             <li><code>assign_async/3</code> — spawns a task, renders loading/ok/failed states</li>
             <li>Combine both: stream for the list, assign_async for initial fetch</li>
+            <li><strong>Chunking</strong> — split large inserts into waves via <code>send(self(), :load_next_chunk)</code></li>
           </ul>
         </div>
       </div>
@@ -172,12 +225,51 @@ defmodule LiveviewLabWeb.Lesson8StreamsLive do
     {:noreply, socket}
   end
 
+  def handle_event("load_chunked", _params, socket) do
+    total = 1000
+    items = for i <- 1..total, do: %{id: "c-#{i}", label: "Chunked item ##{i}"}
+    {chunk, rest} = Enum.split(items, @chunk_size)
+
+    socket =
+      socket
+      |> stream(:chunked_items, chunk, reset: true)
+      |> assign(pending_items: rest, chunked_total: total, chunked_loaded: length(chunk))
+
+    if rest != [], do: send(self(), :load_next_chunk)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("reset_chunked", _params, socket) do
+    socket =
+      socket
+      |> stream(:chunked_items, [], reset: true)
+      |> assign(pending_items: [], chunked_total: 0, chunked_loaded: 0)
+
+    {:noreply, socket}
+  end
+
   def handle_event("reset_stream", _params, socket) do
     {:noreply, stream(socket, :messages, [], reset: true)}
   end
 
   def handle_event("reload_async", _params, socket) do
     {:noreply, assign_async(socket, :slow_data, fn -> fetch_slow_data() end, reset: true)}
+  end
+
+  # -- Chunked loading --
+
+  def handle_info(:load_next_chunk, socket) do
+    {chunk, rest} = Enum.split(socket.assigns.pending_items, @chunk_size)
+
+    socket =
+      socket
+      |> stream(:chunked_items, chunk)
+      |> assign(pending_items: rest, chunked_loaded: socket.assigns.chunked_loaded + length(chunk))
+
+    if rest != [], do: send(self(), :load_next_chunk)
+
+    {:noreply, socket}
   end
 
   # -- Private --

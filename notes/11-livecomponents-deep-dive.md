@@ -101,8 +101,14 @@ First render:          Subsequent renders:
 mount/1 → update/2 → render/1    update/2 → render/1
 ```
 
+**Key distinction:** `mount/1` runs once (when the component first appears).
+`update/2` runs on **every** render — both the first render and all subsequent
+re-renders. This means `update/2` is the primary place to receive and apply props
+from the parent.
+
 ### mount/1
-Called once per component instance (first render only).
+Called once per component instance (first render only). Use it for one-time
+initialization of internal state:
 
 ```elixir
 def mount(socket) do
@@ -183,10 +189,11 @@ def handle_event("save", params, socket) do
   {:noreply, socket}
 end
 
-# Parent (handle_info)
+# Parent (handle_info) — the card_id tells which component sent the message
 def handle_info({:card_saved, card_id, params}, socket) do
-  # Handle the child's message
-  {:noreply, socket}
+  # card_id identifies which card was saved, useful when you have
+  # multiple instances of the same component
+  {:noreply, put_flash(socket, :info, "Card #{card_id} saved!")}
 end
 ```
 

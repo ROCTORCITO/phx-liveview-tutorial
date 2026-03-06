@@ -154,10 +154,28 @@ def handle_info({:progress, pct}, socket) do
 end
 ```
 
+**Managing button state:** Track whether a task is running with a boolean assign to
+disable the trigger button and prevent duplicate launches:
+
+```elixir
+def handle_event("start_job", _, socket) do
+  lv = self()
+  # ...spawn task...
+  {:noreply, assign(socket, progress: 0, progress_running: true)}
+end
+
+def handle_info(:complete, socket) do
+  {:noreply, assign(socket, progress_running: false)}
+end
+```
+
 **Template:**
 ```heex
 <progress class="progress" value={@progress} max="100" />
 <span>{@progress}%</span>
+<button phx-click="start_job" disabled={@progress_running}>
+  {if @progress_running, do: "Processing...", else: "Start"}
+</button>
 ```
 
 **Optimization:** Don't send every single update — throttle to avoid flooding the
@@ -224,15 +242,9 @@ For production code, use `Task.Supervisor` instead of bare `Task.start`:
 ```elixir
 # In application.ex children list
 {Task.Supervisor, name: MyApp.StreamingSupervisor}
-
-# In LiveView
-Task.Supervisor.start_child(MyApp.StreamingSupervisor, fn ->
-  lv = self()  # Still the LiveView PID here — start_child runs the fn in a new process
-  # ... wait, this is wrong! self() here is the *child* task's PID.
-end)
 ```
 
-**Correct usage:**
+**Usage — capture `self()` before spawning:**
 ```elixir
 def handle_event("start", _, socket) do
   lv = self()  # Capture LiveView PID *before* spawning

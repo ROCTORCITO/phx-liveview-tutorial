@@ -124,7 +124,7 @@ defmodule LiveviewLabWeb.Lesson9StreamingLive do
         <div class="card-body text-sm space-y-2">
           <h3 class="font-bold">Key Takeaways</h3>
           <ul class="list-disc list-inside space-y-1 opacity-80">
-            <li>Use <code>Task.async</code> + <code>send(lv_pid, msg)</code> for streaming</li>
+            <li>Use <code>Task.start</code> + <code>send(lv_pid, msg)</code> for streaming</li>
             <li><code>handle_info/2</code> receives each chunk and updates assigns</li>
             <li>LiveView only sends the diff — even appending text is efficient</li>
             <li>For production LLM streaming, same pattern works with real API chunks</li>

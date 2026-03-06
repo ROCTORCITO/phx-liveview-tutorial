@@ -107,6 +107,34 @@ stream(socket, :items, new_items, reset: true)
 stream(socket, :items, [], reset: true)
 ```
 
+### Stream Append Pattern
+
+Initialize empty streams and append items on demand — track a counter to show the
+user how many items exist without keeping the items in server memory:
+
+```elixir
+def mount(_, _, socket) do
+  socket =
+    socket
+    |> stream(:append_items, [])
+    |> assign(append_count: 0)
+
+  {:ok, socket}
+end
+
+def handle_event("add_items", _params, socket) do
+  count = socket.assigns.append_count
+  new_items = for i <- (count + 1)..(count + 10), do: %{id: i, text: "Item #{i}"}
+
+  socket =
+    socket
+    |> stream(:append_items, new_items)
+    |> assign(append_count: count + 10)
+
+  {:noreply, socket}
+end
+```
+
 ### Why Streams Win
 
 | Feature | temporary_assigns | Streams |
@@ -135,7 +163,7 @@ stream(socket, :items, [], reset: true)
 def mount(_, _, socket) do
   socket =
     socket
-    |> assign(page: 1, end_of_data: false)
+    |> assign(page: 1, end_of_data: false, loading: false)
     |> stream(:items, fetch_page(1))
 
   {:ok, socket}
@@ -149,6 +177,29 @@ def handle_event("load_more", _, socket) do
     socket
     |> stream(:items, items)
     |> assign(page: page, end_of_data: length(items) < @page_size)
+
+  {:noreply, socket}
+end
+```
+
+**Simulating async loading:** The source uses `send(self(), :do_load_more)` to defer
+the actual data fetch to `handle_info`, showing a loading state immediately:
+
+```elixir
+def handle_event("load_more", _params, socket) do
+  send(self(), :do_load_more)
+  {:noreply, assign(socket, loading: true)}
+end
+
+def handle_info(:do_load_more, socket) do
+  page = socket.assigns.page + 1
+  items = generate_items_for_page(page)
+  end_of_data = page >= 5  # Hardcoded limit for demo
+
+  socket =
+    socket
+    |> stream(:items, items)
+    |> assign(page: page, end_of_data: end_of_data, loading: false)
 
   {:noreply, socket}
 end

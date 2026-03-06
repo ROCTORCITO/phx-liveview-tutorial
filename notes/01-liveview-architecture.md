@@ -347,6 +347,31 @@ while keeping the server as the source of truth.
 
 ---
 
+### 10. Interactive Demos in the Source
+
+The source file demonstrates these concepts with three interactive sections:
+
+1. **Connection Inspector** — Displays `connected?(socket)`, transport mode, and `self()` PID.
+   The PID changes between static render and WebSocket because they are different BEAM processes.
+
+2. **Process Memory** — Uses `:erlang.process_info(self(), :memory)` to show how
+   adding items to assigns grows the process heap:
+   ```elixir
+   defp get_memory do
+     case :erlang.process_info(self(), :memory) do
+       {:memory, bytes} -> bytes
+       _ -> 0
+     end
+   end
+   ```
+   Click "Add 1,000 Items" repeatedly to watch memory climb — this is why streams
+   exist for large lists.
+
+3. **Diff Demo** — Shows the tiny JSON payload LiveView sends (`%{"0" => "5"}`) vs
+   what a full page reload would require. Click the counter to see the contrast.
+
+---
+
 ## Common Pitfalls
 
 1. **Running expensive work in the disconnected mount** — The disconnected mount exists

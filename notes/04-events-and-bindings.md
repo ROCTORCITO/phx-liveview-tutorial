@@ -331,6 +331,48 @@ disables the button during form submission.
 
 ---
 
+### 9. Using Streams for Event Logs
+
+The source file uses `stream/3` to render the event log efficiently. Instead of
+accumulating entries in a regular list assign (which grows without bound on the
+server), streams discard items after sending them to the client.
+
+```elixir
+# In mount: initialize an empty stream
+socket = stream(socket, :event_log, [])
+
+# In the event handler: prepend with at: 0
+defp append_log(socket, event, payload, badge_class) do
+  counter = socket.assigns.log_counter + 1
+  entry = %{id: counter, timestamp: now(), event: event, payload: payload, badge_class: badge_class}
+
+  socket
+  |> stream_insert(:event_log, entry, at: 0)  # at: 0 = prepend (newest first)
+  |> assign(log_counter: counter)
+end
+
+# Reset the stream (clear all entries)
+def handle_event("clear_log", _params, socket) do
+  {:noreply, stream(socket, :event_log, [], reset: true)}
+end
+```
+
+**In the template:**
+```heex
+<div id="event-log" phx-update="stream">
+  <div :for={{dom_id, entry} <- @streams.event_log} id={dom_id}>
+    <span>{entry.event}</span>
+    <span>{entry.payload}</span>
+  </div>
+</div>
+```
+
+This pattern is ideal for append-heavy UIs (event logs, activity feeds, chat) where
+you want the list to grow without limit in the browser while keeping server memory
+constant. See Lesson 8 for a deep dive on streams.
+
+---
+
 ## Common Pitfalls
 
 1. **All `phx-value-*` params are strings** — `phx-value-id={42}` arrives as

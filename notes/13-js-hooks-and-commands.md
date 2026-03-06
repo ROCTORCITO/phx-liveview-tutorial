@@ -371,6 +371,11 @@ Hooks.KeyHandler = {
 
 ## LiveView 1.1: Colocated Hooks
 
+> **Note:** The source file for this lesson uses the **traditional approach** (hooks
+> defined in `app.js`). Colocated hooks are a newer feature introduced in LiveView 1.1.
+> Both approaches work — colocated hooks are shown here for reference when you're ready
+> to adopt them.
+
 LiveView 1.1 introduced **colocated hooks**, which let you define JavaScript hook
 code directly within your component files. This keeps the hook next to the component
 that uses it, improving maintainability.
@@ -417,6 +422,9 @@ end
 ---
 
 ## LiveView 1.1: phx-mounted & JS.ignore_attributes
+
+> **Note:** These features are not used in the source file but are documented here
+> for reference.
 
 ### phx-mounted
 

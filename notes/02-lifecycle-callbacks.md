@@ -314,12 +314,50 @@ def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
 end
 ```
 
+**Timer pattern with `Process.send_after/3`:**
+
+The source file demonstrates a start/stop timer using `Process.send_after/3` instead
+of `:timer.send_interval/2`. This gives more control — you can cancel individual timers
+and avoid accumulating intervals:
+
+```elixir
+# Start: schedule the first tick
+def handle_event("toggle_timer", _params, socket) do
+  if socket.assigns.timer_running do
+    # Stop: cancel the pending timer
+    if socket.assigns.timer_ref, do: Process.cancel_timer(socket.assigns.timer_ref)
+    {:noreply, assign(socket, timer_running: false, timer_ref: nil)}
+  else
+    ref = Process.send_after(self(), :tick, 1000)
+    {:noreply, assign(socket, timer_running: true, timer_ref: ref)}
+  end
+end
+
+# Each tick schedules the next one (self-perpetuating)
+def handle_info(:tick, socket) do
+  if socket.assigns.timer_running do
+    ref = Process.send_after(self(), :tick, 1000)
+    {:noreply, assign(socket, tick_count: socket.assigns.tick_count + 1, timer_ref: ref)}
+  else
+    {:noreply, socket}
+  end
+end
+```
+
+**`Process.send_after` vs `:timer.send_interval`:**
+
+| Approach | Cancellable? | Self-perpetuating? | Best for |
+|---|---|---|---|
+| `Process.send_after/3` | Yes, via `Process.cancel_timer/1` | Must reschedule in `handle_info` | Start/stop timers, variable intervals |
+| `:timer.send_interval/2` | Yes, via `:timer.cancel/1` | Automatic | Fixed-rate polling |
+
 **Common sources of messages:**
 
 | Source | How it sends | Example |
 |---|---|---|
 | PubSub | `Phoenix.PubSub.broadcast/3` | Real-time updates from other users |
 | `send/2` | `send(self(), :tick)` | Deferring work from mount or handle_event |
+| `Process.send_after/3` | `Process.send_after(self(), :tick, 1000)` | Delayed/recurring timers |
 | `:timer` | `:timer.send_interval/2` | Periodic updates (clocks, polling) |
 | `Task` | `Task.async/1` | Background computation results |
 | GenServer | `GenServer.cast/2` or `send/2` | Messages from other OTP processes |

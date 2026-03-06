@@ -159,6 +159,71 @@ end
 
 ---
 
+### 4. Chunked Stream Loading
+
+When you have thousands of items to stream, inserting them all at once bundles a
+massive HTML payload into a single WebSocket frame. The browser's JavaScript engine
+locks up while rendering the DOM, making the UI unresponsive.
+
+**The fix:** break the dataset into small chunks and send them in waves, giving the
+browser a "breath" between each batch.
+
+```elixir
+@chunk_size 50
+
+def handle_event("load_large_dataset", _params, socket) do
+  items = generate_items(5000)
+
+  {chunk, rest} = Enum.split(items, @chunk_size)
+
+  socket =
+    socket
+    |> stream(:items, chunk)
+    |> assign(pending_items: rest)
+
+  # Schedule the next chunk — the 0ms delay yields control back to the
+  # process mailbox so it can handle UI events between chunks
+  if rest != [] do
+    send(self(), :load_next_chunk)
+  end
+
+  {:noreply, socket}
+end
+
+def handle_info(:load_next_chunk, socket) do
+  {chunk, rest} = Enum.split(socket.assigns.pending_items, @chunk_size)
+
+  socket =
+    socket
+    |> stream(:items, chunk)
+    |> assign(pending_items: rest)
+
+  if rest != [] do
+    send(self(), :load_next_chunk)
+  end
+
+  {:noreply, socket}
+end
+```
+
+**How it works:**
+1. Split items into a chunk of N and the remaining items
+2. Stream-insert the first chunk (browser renders ~50 DOM nodes)
+3. `send(self(), :load_next_chunk)` puts a message in the process mailbox —
+   this yields control so any pending UI events (scrolls, clicks) get processed first
+4. `handle_info` picks up the next chunk and repeats until done
+
+**Why `send/2` instead of `Process.send_after/3`?** Plain `send` with a 0ms delay is
+usually enough — the key is yielding the process mailbox, not adding wall-clock delay.
+Use `Process.send_after(self(), :load_next_chunk, 50)` if you want a visible pause
+between waves (e.g., for a staggered animation effect).
+
+**Chunk size tuning:** 50–100 items is a good starting point. Smaller chunks keep the
+UI more responsive but increase the number of WebSocket frames. Profile with your
+actual item templates — complex markup may need smaller chunks.
+
+---
+
 ## When to Use What
 
 | Scenario | Use | Why |
@@ -168,6 +233,7 @@ end
 | Data you need to filter/sort on server | Regular `assign` | Server must hold the data to filter/sort it; streams discard items so you'd have to reset the entire stream |
 | Real-time feed (chat, logs) | `stream/3` + PubSub | Efficient appending without growing server memory |
 | One-time expensive computation | `assign_async/3` | Avoids blocking mount while the computation runs |
+| Streaming 1,000+ items at once | Chunked stream loading | Keeps UI responsive by sending items in waves via `send/2` |
 
 ---
 
@@ -178,6 +244,7 @@ end
 3. **Trying to access stream items on server** — they don't exist there after being sent to the client
 4. **Not handling async failures** — always provide a `<:failed>` slot
 5. **Blocking mount with slow queries** — use `assign_async` instead
+6. **Streaming thousands of items at once** — freezes the browser; use chunked loading instead
 
 ---
 
@@ -187,3 +254,5 @@ end
 2. Implement `stream_insert` with `at: 0` to prepend items instead of appending
 3. Create a `start_async` task that loads data, and add a "cancel" button that calls `cancel_async(socket, :task_name)` to abort it
 4. Build a "live search" that uses assign_async with debounce
+5. Modify the chunked loader to show a progress bar (track `chunked_loaded` / `chunked_total` assigns)
+6. Try changing the chunk size from 50 to 500 — observe how it affects UI responsiveness during loading
